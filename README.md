@@ -34,7 +34,7 @@ the skill makes Claude:
 ### Claude Code (personal skill)
 
 ```bash
-git clone https://github.com/<your-username>/iq-tax-evaluator.git ~/.claude/skills/iq-tax-evaluator
+git clone https://github.com/m1iktea/iq-tax-evaluator.git ~/.claude/skills/iq-tax-evaluator
 ```
 
 That's it. Claude Code auto-discovers skills in `~/.claude/skills/`. Next time you ask "X 是智商税吗" the skill will activate.
@@ -51,7 +51,7 @@ If you prefer to scope the skill to a single project:
 
 ```bash
 mkdir -p .claude/skills
-git clone https://github.com/<your-username>/iq-tax-evaluator.git .claude/skills/iq-tax-evaluator
+git clone https://github.com/m1iktea/iq-tax-evaluator.git .claude/skills/iq-tax-evaluator
 ```
 
 ## How to use it
