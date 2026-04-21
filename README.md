@@ -111,7 +111,7 @@ This skill is personally maintained. Issues and PRs welcome — particularly:
 
 ## License
 
-See [LICENSE](./LICENSE) — pick one that suits you (MIT / Apache-2.0 / CC-BY-4.0 are all reasonable for a skill like this).
+[MIT](./LICENSE) © 2026 m1iktea
 
 ## Acknowledgements
 
