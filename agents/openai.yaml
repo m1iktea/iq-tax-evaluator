@@ -1,0 +1,7 @@
+interface:
+  display_name: "IQ Tax Evaluator"
+  short_description: "Evidence-check products and health claims"
+  default_prompt: "Use $iq-tax-evaluator to assess whether this product or health claim is evidence-backed, exaggerated, or unsupported."
+
+policy:
+  allow_implicit_invocation: true

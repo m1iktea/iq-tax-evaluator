@@ -1,320 +1,146 @@
 ---
 name: iq-tax-evaluator
-description: Use when user asks whether a product, supplement, health claim, folk remedy, skincare/beauty product, gadget, or piece of "common wisdom" is scientifically valid or a scam. Triggers on Chinese queries like "X是智商税吗", "X有用吗", "X值得买吗", "X靠谱吗", "X真的能...吗", or English equivalents "is X a scam / pseudoscience / worth buying". Also triggers on requests to fact-check health, nutrition, fitness, parenting, or consumer product claims against scientific evidence.
+description: Use when user asks whether a product, supplement, health claim, folk remedy, skincare/beauty product, parenting tip, gadget, or piece of "common wisdom" is scientifically valid, worth buying, exaggerated, or a scam. Triggers on Chinese queries like "X是智商税吗", "X有用吗", "X值得买吗", "X靠谱吗", "X真的能...吗", "吃X能治/预防/改善吗", and English equivalents such as "is X a scam/pseudoscience/worth buying" or "does X actually work". Use authoritative, current evidence with citations; for health, nutrition, safety, regulatory, or current product claims, verify with live authoritative sources before concluding and say "证据不足/不知道" if evidence cannot be verified.
 ---
 
 # 智商税鉴定 Skill (IQ Tax Evaluator)
 
-## Overview
+## Core Rule
 
-鉴定生活中的产品、保健品、偏方、"常识" 是否有科学依据。**核心原则：只认权威证据，不编造，不知道就说不知道。**
+鉴定生活中的产品、保健品、偏方、"常识" 是否有科学依据。**只认可核验的权威证据；查不到就说不知道；绝不编造研究、数字或结论。**
 
-The ONE rule that overrides everything else:
+> 如果没有权威来源支持，必须明确说 "不知道 / 证据不足"。
+> If no authoritative source supports a claim, say "I don't know / insufficient evidence".
 
-> **如果没有权威来源支持，必须明确说 "不知道 / 证据不足"，绝不编造研究、数据或结论。**
-> If no authoritative source supports a claim, you MUST say "I don't know / insufficient evidence". Never fabricate studies, numbers, or conclusions.
+## Non-Negotiables
 
-## When to Use
+- Treat the user request as an evidence assessment, not a vibe check or purchase persuasion.
+- For health, nutrition, supplements, skincare, medical devices, product safety, regulation, or claims that may have changed, search current authoritative sources before giving a verdict. If live search or source access is unavailable, say the evaluation is incomplete and do not make a firm claim.
+- Cite only sources you can actually access and link. "I remember a study" is not evidence.
+- Do not cite marketing pages, seller copy, KOL posts, personal anecdotes, or unverifiable "某某医生说" as evidence.
+- Separate "no evidence found", "evidence is mixed/insufficient", and "evidence shows it does not work".
+- Do not directly extrapolate animal, cell, or mechanism-only evidence to real-world human effectiveness.
+- For disease treatment, pregnancy, children, chronic disease, medication interactions, or serious symptoms, give evidence context but do not replace medical care; tell the user to consult a qualified clinician.
 
-Triggers (中文):
-- "X 是智商税吗 / 算不算智商税"
-- "X 有没有用 / 真的有效吗 / 真的能 ... 吗"
-- "X 值得买吗 / 该不该买"
-- "X 靠谱吗 / 科学吗 / 有依据吗"
-- "吃 X 能治 / 预防 / 改善 ..."
-- "这个产品 / 保健品 / 偏方 / 设备 怎么样"
+## Reference Files
 
-Triggers (English):
-- "Is X a scam / pseudoscience / woo"
-- "Does X actually work / have evidence"
-- "Is it worth buying X"
-- Any claim-evaluation request about health, nutrition, supplements, skincare, gadgets, parenting tips
+Load only the reference needed for the task:
 
-**Do NOT use for:**
-- 纯个人偏好问题（好不好吃、好不好看）
-- 投资、股票、金融产品评估（不是"科学证据"能判断的）
-- 纯哲学 / 伦理 / 政治问题
+- [references/source-hierarchy.md](references/source-hierarchy.md): authoritative source hierarchy, search targets, and evidence sufficiency rules.
+- [references/red-flags.md](references/red-flags.md): common pseudoscience and marketing red flags.
+- [references/examples.md](references/examples.md): regression prompts, expected behavior, and common traps.
 
-## The Iron Rule: No Fabrication
+## Workflow
 
-```
-如果你 "记得" 有研究支持某个结论，但现在搜不到具体来源 —— 那就当作没有。
-"我记得好像看过" ≠ 证据。
-```
+### Step 0: Define the Claim
 
-**严禁行为（Forbidden）：**
-- ❌ 凭印象引用 "某某研究表明..." 却不能提供具体出处
-- ❌ 编造期刊名、作者、年份、样本量、p 值
-- ❌ 把个别研究结果说成 "科学共识"
-- ❌ 用 "可能 / 据说 / 有人认为" 偷换成肯定结论
-- ❌ 把动物实验 / 体外实验结果直接外推到人体
-- ❌ 把营销宣传（官网、卖家话术、媒体软文）当证据
+Rewrite the user's question into a concrete, falsifiable claim before evaluating.
 
-**正确做法：**
-- ✅ 每一个关键结论都必须能对应到具体、可访问的权威来源
-- ✅ 说不清楚 → 说 "目前权威资料不足，我无法判断"
-- ✅ 区分 "无证据支持" vs "有证据反对" vs "证据不足"
+Examples:
 
-## Authoritative Source Hierarchy (权威来源分级)
+- "值得买吗" -> "For which buying intent is this better than cheaper alternatives?"
+- "能增强免疫吗" -> "Does it reduce clinically meaningful infections or improve validated immune outcomes?"
+- "能治疗/预防 X 吗" -> "Does it improve or prevent X in humans at the proposed dose and population?"
 
-优先级从高到低，**只引用能实际访问到、给得出链接 / 标题 / 机构名的来源**。
+If intent is unclear but common intents are obvious, enumerate likely intents in the answer instead of asking a follow-up. Ask only when the missing context would materially change safety or the verdict.
 
-### Tier 1 — 国际医学 / 科学权威（最高优先级）
+### Step 1: Decompose Mechanisms
 
-**原始研究 / 系统综述：**
-- **Cochrane Reviews** (cochranelibrary.com) — 系统综述金标准
-- **PubMed / NIH / NLM** — 同行评审论文索引（优先 systematic review & meta-analysis）
-- **NEJM / Lancet / JAMA / BMJ** — 顶级医学期刊
+Break the product or claim into underlying mechanisms, active ingredients, or operating principles.
 
-**机构立场 / 指南：**
-- **WHO** (who.int) — 世界卫生组织
-- **FDA / EMA / MHRA** — 美欧英药监（含药品说明书、510(k) 审批）
-- **CDC / ECDC / NHS / NICE** — 疾控和国家指南
-- **USDA / EFSA** — 美欧食品安全
+- Complex products must usually have at least 2 mechanisms, unless the product is genuinely a single active ingredient or single physical mechanism.
+- For brand/model claims, separate mechanism evidence from execution evidence: the mechanism may work while a specific product's quality, dose, concentration, wavelength, certification, or testing remains unverified.
+- If a mechanism uses vague terms such as "量子", "能量", "频率", "激活细胞", "排毒", or "酸碱体质", first translate it into a standard scientific concept. If no standard concept exists, mark that mechanism 🔴.
 
-**临床决策 / 医学教育：**
-- **UpToDate / DynaMed / BMJ Best Practice** — 临床决策参考
-- **Merck / MSD Manual** (merckmanuals.com) — 权威医学教科书
-- **Mayo Clinic / Cleveland Clinic / Johns Hopkins / Harvard Health** — 医生审核的公众医学教育
+### Step 2: Search Evidence Per Mechanism
 
-**证据聚合 / 反伪科学：**
-- **Examine.com** — 保健品 / 营养补剂领域的"证据综合"金标准，每条都带引文
-- **Science-Based Medicine / Quackwatch** — 专门评估伪科学声称
-- **Consumer Reports / Which? / Wirecutter** — 独立消费品测评
+For each mechanism, try at least three search angles before using 🟠 or ⚪:
 
-### Tier 2 — 中文权威来源
+1. English academic or technical terms, preferably systematic reviews, guidelines, or authoritative reviews.
+2. Official institution, guideline, regulator, or independent testing source.
+3. Chinese authoritative or professional source when the product, market, or user context is Chinese.
 
-- **国家卫健委、国家药监局 (NMPA)、市场监管总局**（含药品说明书、特殊食品数据库、比较试验公告）
-- **中国营养学会**（《中国居民膳食指南》）
-- **中华医学会 / 各分会诊疗指南**
-- **默沙东诊疗手册（中文版）** — MSD Manual 的中文权威翻译
-- **丁香医生 / 丁香园**（专业医生审稿）
-- **果壳网 / 科学松鼠会**（科普，但需对照原始文献）
-- **中国消费者协会**比较试验报告
+Record each useful source as: URL, organization/journal, year, and one-sentence conclusion. Use [references/source-hierarchy.md](references/source-hierarchy.md) to select sources and decide whether evidence is sufficient.
 
-### Tier 3 — 需要谨慎使用
+### Step 3: Grade Each Mechanism
 
-- 维基百科 — 用作起点，**必须追到引用的原始来源**再引用
-- 单篇未被系统综述纳入的论文 — 可以提，但要说明 "单篇研究，需要重复验证"
+Use one verdict per mechanism:
 
-### ❌ 不算证据
-
-- 电商详情页、广告、KOL 带货、小红书 / 抖音 / 公众号 的个人经验
-- "某某医生说" 但找不到具体出处
-- 品牌方自己赞助 / 发布的 "研究"
-- 传统 / 古方 "几千年验证" 的说法（不是证据）
-
-### 证据充分性规则（重要）
-
-- **多个 Tier 1/2 来源口径一致 = 充分证据**，可下 🟢 或 🔴。不必强求有 Cochrane / RCT —— 很多日常产品本来就没人做 RCT。
-- 例：Mayo Clinic + MSD Manual + 丁香医生 都持同一立场 → 这就是证据，不是"证据不足"。
-- 🟠 只在**多源都查不到** 或 **权威之间有实质分歧** 时使用。
-
-## Workflow (鉴定流程)
-
-**核心思路：把产品 / 主张拆到底层机制层，逐机制评估，再合成综合判断。**
-
-这样做的理由：品牌级别的 RCT 几乎不存在（"十月结晶消毒柜的杀菌率" 没人研究），但**机制级别的证据非常丰富**（"UV-C 家用灭菌效果" 一大把文献）。拆到机制层，"证据不足" 的假阳性会大幅减少。
-
-### Step 1: 拆解 (Decompose)
-
-把产品 / 主张拆成它依赖的**底层机制 / 有效成分 / 作用原理**的列表。
-
-拆到每一层都能对应到**已知的物理、化学、生理学概念**为止。
-
-**例子：**
-
-| 产品 / 声称 | 拆出的机制 |
-|---|---|
-| 奶瓶消毒柜 | UV-C 紫外线杀菌 / 热风烘干 / (可选) 蒸汽或巴氏加热 |
-| 胶原蛋白口服液 | 口服蛋白质消化吸收 / 氨基酸到皮肤靶向沉积 |
-| 益生菌酸奶（宣称增强免疫） | 特定菌株的临床证据 / 菌株存活到肠道的比例 / 对某个具体症状（如抗生素相关腹泻）有效 |
-| 远红外理疗灯 | 红外辐射加热 / 红外辐射的非热生理作用 |
-| 量子能量项链 | "量子能量" 作用于人体 ← 拆到这层就暴露：物理学里这个词没有对应概念 → 这一层 🔴 |
-| 富氢水杯 | 氢气溶于水的浓度 / 氢气进入人体后的生物效应 |
-
-**拆解的硬规则：**
-- 复杂产品**必须拆出至少 2 层**（避免囫囵一团判 ⚪）
-- 机制名里含"量子 / 能量 / 频率 / 激活细胞 / 排毒 / 酸碱体质"等模糊术语 —— 先试着找对应的正规科学名词；找不到 → 该层直接 🔴
-
-### Step 2: 逐项搜证据 — 每个机制独立搜
-
-对每个机制，**至少试 3 种查询角度**，三路都搜空才允许 🟠 / ⚪：
-
-1. **英文学术 / 机制专业名**（例：`UV-C germicidal irradiation household efficacy`）
-2. **中文科普 / 成分名**（例：`紫外线消毒 婴儿奶瓶 效果`）
-3. **机构立场 / 指南**（例：`CDC UV sterilization home`、`丁香医生 紫外线消毒柜`）
-
-每条证据记录：URL、机构 / 期刊、年份、关键结论一句话。
-
-### Step 3: 逐项定档
-
-每个机制独立给一档 🟢 / 🟡 / 🟠 / 🔴 / ⚪。
-
-证据质量层级（高 → 低）：
-系统综述 > RCT > 观察性研究 > 机构立场一致 > 专家意见 > 机制推测
-
-### Step 4: 合成综合档 + 按购买意图给建议
-
-组合各机制的档位 → 综合判断。
-
-合成规则参考：
-- 所有机制 🟢 + 但"是否必需" 存疑 → 综合 🟡
-- 关键机制 🔴 → 综合 🔴（一个假机制毁全局）
-- 机制都 🟢 但品牌执行 ⚪ → 综合 🟡 + 建议看执行细节
-- 机制都 ⚪ → 综合 ⚪
-
-**按购买意图分流给建议（关键原则）：**
-
-同一个产品在不同用户眼里 "值不值" 是**不同的问题** —— 取决于他**为什么**想买。所以"该不该买"不能给一刀切的"值得 / 不值得"。
-
-做法：枚举该产品常见的**购买意图**，把每个意图对应回它依赖的那**一个机制**，按那个机制的档位给建议。
-
-例（益生菌）：
-
-| 购买意图 | 对应机制档位 | 建议 |
+| Verdict | Meaning | Use When |
 |---|---|---|
-| 预防抗生素相关腹泻 | 🟢 | 值得，认准 LGG / S. boulardii |
-| 改善 IBS / 便秘 | 🟡 | 可以试，要看具体菌株 |
-| 健康人日常保健 | 🟠 | 没必要，吃酸奶即可 |
-| 预防感冒、增强免疫 | 🔴 | 别花这钱 |
+| 🟢 有科学依据 | Evidence supports the claim under relevant conditions | For medical/treatment claims: consistent systematic reviews, RCTs, or guidelines. For ordinary physical/consumer mechanisms: multiple authoritative sources, accepted science, or credible independent tests agree. Never use 🟢 from mechanism plausibility alone. |
+| 🟡 部分有效但被夸大 | Some evidence exists, but marketing overstates effect, population, dose, or certainty | Benefit is limited to specific conditions, strains, doses, devices, populations, or outcomes. |
+| 🟠 证据不足 | Evidence is weak, indirect, conflicting, or not enough for a firm conclusion | Mostly animal/cell studies, small studies, mechanism speculation, low-quality studies, or real disagreement among authoritative sources. |
+| 🔴 无科学依据 / 智商税 | Evidence or basic science contradicts the claim | Authoritative sources reject it, high-quality evidence shows no meaningful benefit, or the claimed mechanism has no valid scientific referent. |
+| ⚪ 我不知道 | Authoritative evidence cannot be found or accessed | Use only after the three search angles fail or source access prevents verification. Say exactly what could not be verified. |
 
-这样即使综合档是 🟡，用户也能拿到**针对他那种情况**的具体答案，而不是一个模糊结论。
+### Step 4: Synthesize and Advise by Intent
 
-## The Five-Level Verdict (五档判定)
+Combine mechanism verdicts into one overall verdict, then answer "should I buy it" by purchase intent.
 
-每次鉴定必须明确落到以下 **一档**：
+- A key mechanism 🔴 usually makes the overall verdict 🔴.
+- All mechanisms 🟢 but necessity, cost, or product execution is questionable -> usually 🟡.
+- Mechanisms are plausible but human/product evidence is weak -> 🟠.
+- Mechanisms cannot be verified -> ⚪.
+- Buying advice must not be one-size-fits-all. Map each common intent to the relevant mechanism verdict.
 
-| 档位 | 含义 | 使用条件 |
-|------|------|---------|
-| 🟢 **有科学依据** | 有 Tier 1/2 高质量证据支持，效果显著且普适 | 多项 RCT / 系统综述一致支持 |
-| 🟡 **部分有效但被夸大** | 有一定证据，但宣传的效果 / 人群 / 剂量被过度放大 | 证据仅限特定人群 / 剂量 / 条件 |
-| 🟠 **证据不足** | 缺乏高质量研究，无法下结论 | 只有动物实验 / 小样本 / 机制推测；**或 Tier 1/2 权威之间立场实质分歧** |
-| 🔴 **无科学依据 / 智商税** | 有 Tier 1/2 证据反对，或所依据的机制已被证伪 | 系统综述 / 权威机构明确否定；或机制名本身不对应任何正规科学概念 |
-| ⚪ **我不知道** | 我查不到权威资料，不愿猜 | **对该机制 3 路查询都空**，才能用这档。不是"没找到 Cochrane RCT"就用 |
+Example:
 
-## Output Format (回答格式)
+| Purchase Intent | Mechanism Verdict | Advice |
+|---|---|---|
+| 预防抗生素相关腹泻 | 🟢 | 可以考虑，认准有临床证据的菌株。 |
+| 改善 IBS / 便秘 | 🟡 | 可以试，但效果依菌株和人群而异。 |
+| 健康人日常增强免疫 | 🟠/🔴 | 通常没必要，优先睡眠、运动、饮食。 |
 
-**排版原则：结论前置 + 按机制组织证据。** 普通用户只想要"该不该买 / 靠不靠谱"，把它放最上面。证据按机制分组呈现，让用户看到"这个产品哪些部分科学、哪些部分是噱头"。
+## Output Format
 
-按以下结构输出：
+Start with the conclusion. Do not put a separate "Claim" section.
 
 ```markdown
 ## 结论
-<综合 emoji> **一句话综合判断** —— 买 / 不买 / 看情况 + 主因一句话。
+<overall emoji> **一句话判断** —— 买 / 不买 / 看情况 + 主因一句话。
 
-## 该不该买（按购买意图分流）
+## 该不该买（按购买意图）
 
-把该产品**常见购买意图**一条条列出来，每条用**该意图依赖的机制**的档位给建议：
+- 🟢 **如果你是为了 <intent A>（对应机制）** -> 值得/可以考虑，认准 <条件>。
+- 🟡 **如果你是为了 <intent B>（对应机制）** -> 可以试，但 <限制>。
+- 🟠 **如果你是为了 <intent C>（对应机制）** -> 证据不足，没必要优先买；<替代方案>。
+- 🔴 **如果你是为了 <intent D>（对应机制）** -> 不建议花钱。
 
-- 🟢 **如果你是为了 <意图 A>（机制 1）** → 值得买，认准 <关键标识 / 规格>
-- 🟡 **如果你是为了 <意图 B>（机制 2）** → 可以试，但 <限定条件>
-- 🟠 **如果你是为了 <意图 C>（机制 3）** → 没必要，<更便宜的替代>
-- 🔴 **如果你是为了 <意图 D>（宣传但机制 4 是 🔴）** → 别花这钱
-
-💡 通用替代方案：...
-⚠️ 真正要注意的风险：...
+通用替代方案：...
+真正要注意的风险：...
 
 ## 机制拆解与逐项证据
 
-### <档位 emoji> 机制 1：<名称>
-一句话说明这是什么 / 产品宣称它做什么。
-- [来源 机构/年份](url) 关键结论
-- [来源 机构/年份](url) 关键结论
+### <emoji> 机制 1：<名称>
+一句话说明机制和产品声称。
+- [来源 机构/年份](url)：关键结论。
+- [来源 机构/年份](url)：关键结论。
 
-### <档位 emoji> 机制 2：<名称>
-一句话。
-- [来源](url) 关键结论
-
-### <档位 emoji> 机制 3：<名称>
-（如果需要的话）
+### <emoji> 机制 2：<名称>
+一句话说明机制和产品声称。
+- [来源 机构/年份](url)：关键结论。
 
 ## 为什么综合判为 <emoji>
-2–3 句话，把各机制档位组合起来推出综合档。**硬上限 3 句，超出必须删减重写。**
+2-3 句话说明各机制档位如何合成综合档。硬上限 3 句。
 
 ## 我不确定的
-针对 ⚪ 的机制具体讲：没查到什么、需要什么信息能进一步判断。
-如果所有机制都确定，可省略这一段。
+只在存在 ⚪ 或重要执行信息缺失时写：没查到什么、还需要什么信息才能进一步判断。
 ```
 
-### 格式硬规则（违反就重写）
+## Output Checklist
 
-- **结论段必须是第一段**，1–2 句，不要前置铺垫
-- **机制至少拆出 2 个**（除非产品真的只有一个机制，如单一成分保健品）
-- **每个机制单独给一个档位 emoji**，在 `###` 标题上直接显示
-- **"为什么综合判为 X" 最多 3 句**，不能写成小作文
-- **证据必须是可点击 markdown 链接** `[来源](url)`
-- **不在两段里重复同一句结论**（证据段只列"来源 + 结论"，合成段只讲"档位如何组合"）
-- **"主张 / Claim" 不单独列段**，融进结论的一句话里
-- **"该不该买" 必须按购买意图分条**，每条挂一个档位 emoji 映射回一个机制；不能写成"值得 / 不值得"一刀切
+- 结论段是第一段，1-2 句，不前置铺垫。
+- 已把问题改写成可验证主张，但没有单独开 "Claim" 段。
+- 复杂产品拆成至少 2 个机制；单一成分/单一机制产品可以例外。
+- 每个机制标题都有独立 emoji verdict。
+- 每条关键事实都有可点击来源链接。
+- 购买建议按意图分条，每条映射回具体机制。
+- "为什么综合判为 X" 不超过 3 句。
+- 没有把营销、个人经验或品牌赞助内容当作证据。
+- 没有把 "证据不足" 写成 "肯定无效"，也没有把 "机制合理" 写成 "已经有效"。
+- 医疗高风险场景包含必要的就医/专业咨询边界。
 
-## Red Flags — 一眼识别典型智商税套路
+## Bottom Line
 
-看到以下特征，提高警惕（但仍需查证后下结论，不能只靠 red flag 就判 🔴）：
-
-- "纳米 / 量子 / 磁场 / 远红外 / 负离子 / 能量 / 频率" 等物理名词乱用
-- "排毒 / 酸碱体质 / 增强免疫力 / 激活细胞" 等模糊宣传
-- "祖传 / 宫廷 / 千年古方" + 现代病
-- "纯天然所以无副作用"
-- "国外 / NASA / 诺贝尔奖" 背书但查不到官方链接
-- 只有用户证言 / "before-after" 图，没有临床数据
-- 包治百病 / 万能功效
-- 价格极高但成分是常见便宜原料
-- "限时 / 限量 / 再不买就没了"
-- 宣称的机制违反基本生理 / 物理 / 化学规律
-
-## Common Failure Modes (常见错误，必须避免)
-
-| 错误 | 纠正 |
-|------|------|
-| 凭印象说 "研究表明..." | 说不出具体来源 → 改说 "我查不到权威资料" |
-| 把 "机制合理" 当作 "有效" | 机制只能作为假设起点，必须临床证据验证 |
-| 把动物实验说成对人有效 | 明确标注 "仅动物实验，外推到人类尚无证据" |
-| 把 "没证据有效" 说成 "肯定无效" | 两者不同，前者是 🟠，后者才是 🔴 |
-| 被 "传统 / 天然 / 古方" 感动 | 历史长短不是证据 |
-| 被反营销情绪带偏，夸大批判 | 保持中立，只说证据说的话 |
-| 忽略剂量 / 人群 / 条件 | 有效的前提可能很窄，要讲清楚 |
-| "该不该买" 写成一刀切（都值 / 都不值） | 拆出该产品常见**购买意图**，每种意图映射回一个机制档位，分条给建议 |
-
-## Honesty Checklist (输出前自检)
-
-回答发出去前，逐条过一遍：
-
-**拆解（Step 1）：**
-
-- [ ] 产品 / 主张被拆成了**至少 2 个**底层机制？（除非单一成分保健品）
-- [ ] 每个机制都能对应到正规物理 / 化学 / 生理学概念？模糊术语（量子能量等）被识别并标 🔴？
-
-**搜索（Step 2）：**
-
-- [ ] 每个机制都试了 3 路查询（英文学术 / 中文科普 / 机构立场）？
-- [ ] 只有在 3 路都空时才给 ⚪，没有"一次搜不到就放弃"？
-- [ ] 多个 Tier 2 权威口径一致时敢下 🟢/🔴，没有僵化要求 Cochrane RCT？
-
-**内容（事实性）：**
-
-- [ ] 每一条事实声明都有对应的 Tier 1/2 来源？
-- [ ] 没有编造期刊名 / 作者 / 数字？
-- [ ] "不知道" 的地方明确说了 "不知道"？
-- [ ] 判定档位和证据强度匹配（不是证据不足却给了 🟢 或 🔴）？
-- [ ] 区分了 "无证据支持" 和 "有证据反对"？
-- [ ] 给出的建议是针对 "这位用户 / 这个场景"，不是泛泛？
-- [ ] 语气中立客观，没有情绪化 / 带货 / 反带货？
-
-**格式（可读性）：**
-
-- [ ] **结论段是第一段**，且只有 1–2 句？
-- [ ] 每个机制 `###` 标题上都有档位 emoji？
-- [ ] **"为什么综合判为 X" 不超过 3 句**？
-- [ ] 没有单独的"主张 / Claim"段（融进结论了）？
-- [ ] 证据是可点击链接、不是裸文本引用？
-- [ ] 没有在两段里复读同一句话？
-- [ ] **"该不该买" 按购买意图分条**，每条挂档位 emoji 映射回具体机制？没有一刀切？
-
-**任何一项没过 → 改完再发。**
-
-## The Bottom Line
-
-> 这个 skill 的价值不在于 "能判多少是智商税"，而在于 **"该说不知道的时候敢说不知道"**。
->
-> 编造一个听起来有道理的答案，比承认 "我查不到" 危害更大 —— 因为用户会信。
+这个 skill 的价值不在于多快判定 "智商税"，而在于**该说不知道时明确说不知道**。
